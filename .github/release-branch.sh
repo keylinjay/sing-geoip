@@ -7,7 +7,7 @@ cd release
 git init
 git config --local user.email "github-action@users.noreply.github.com"
 git config --local user.name "GitHub Action"
-git remote add origin https://github-action:$GITHUB_TOKEN@github.com/keylinjay/sing-geoip.git
+git remote add origin https://github-action:$env:PERSONAL_TOKEN@github.com/keylinjay/sing-geoip.git
 git branch -M release
 cp ../*.db ../*.sha256sum .
 git add .
