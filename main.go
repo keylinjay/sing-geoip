@@ -260,7 +260,7 @@ func release(source string, destination string, output string, ruleSetOutput str
 
 	// 设置行动输出标签为源发布的名称
 
-	setActionOutput("tag", sting.ReplaceWith(*sourceRelease.Name," ","-"))
+	setActionOutput("tag", strings.ReplaceWith(*sourceRelease.Name," ","-"))
 	return nil
 }
 
