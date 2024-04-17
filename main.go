@@ -163,43 +163,58 @@ func write(writer *mmdbwriter.Tree, dataMap map[string][]*net.IPNet, output stri
 	return err
 }
 
+// release 是一个用于处理资源发布流程的函数。
+// source: 指定源资源的地址。
+// destination: 指定目标资源的地址，用于检查是否需要更新。
+// output: 指定输出文件的基础名称。
+// ruleSetOutput: 指定规则集输出目录。
+// 返回值: 如果执行过程中出现错误，返回error；否则返回nil。
 func release(source string, destination string, output string, ruleSetOutput string) error {
+    // 从源地址获取最新发布信息
 	sourceRelease, err := fetch(source)
 	if err != nil {
 		return err
 	}
+	// 从目标地址获取最新发布信息，用于判断是否需要更新
 	destinationRelease, err := fetch(destination)
 	if err != nil {
 		log.Warn("missing destination latest release")
 	} else {
+		// 如果环境变量NO_SKIP不是"true"，且目标发布信息中包含源发布信息，则认为已经是最新，跳过更新
 		if os.Getenv("NO_SKIP") != "true" && strings.Contains(*destinationRelease.Name, *sourceRelease.Name) {
 			log.Info("already latest")
 			setActionOutput("skip", "true")
 			return nil
 		}
 	}
+	// 下载源发布的二进制文件
 	binary, err := download(sourceRelease)
 	if err != nil {
 		return err
 	}
+	// 解析二进制文件，获取元数据和国家映射
 	metadata, countryMap, err := parse(binary)
 	if err != nil {
 		return err
 	}
+	// 准备所有国家代码的列表，用于后续写入
 	allCodes := make([]string, 0, len(countryMap))
 	for code := range countryMap {
 		allCodes = append(allCodes, code)
 	}
 
+	// 创建写入器，准备写入数据
 	writer, err := newWriter(metadata, allCodes)
 	if err != nil {
 		return err
 	}
+	// 写入全局数据
 	err = write(writer, countryMap, output, nil)
 	if err != nil {
 		return err
 	}
 
+	// 创建写入器，仅包含"cn"的数据，写入特定文件
 	writer, err = newWriter(metadata, []string{"cn"})
 	if err != nil {
 		return err
@@ -209,11 +224,13 @@ func release(source string, destination string, output string, ruleSetOutput str
 		return err
 	}
 
+	// 清理规则集输出目录，并创建目录结构
 	os.RemoveAll(ruleSetOutput)
 	err = os.MkdirAll(ruleSetOutput, 0o755)
 	if err != nil {
 		return err
 	}
+	// 遍历国家映射，为每个国家生成规则集文件
 	for countryCode, ipNets := range countryMap {
 		var headlessRule option.DefaultHeadlessRule
 		headlessRule.IPCIDR = make([]string, 0, len(ipNets))
@@ -241,7 +258,9 @@ func release(source string, destination string, output string, ruleSetOutput str
 		outputRuleSet.Close()
 	}
 
-	setActionOutput("tag", *sourceRelease.Name)
+	// 设置行动输出标签为源发布的名称
+
+	setActionOutput("tag", sting.ReplaceWith(*sourceRelease.Name," ","-"))
 	return nil
 }
 
